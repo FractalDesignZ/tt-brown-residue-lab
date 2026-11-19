@@ -37,4 +37,4 @@ jobs:
           import json
           with open("tt_brown_analysis/analysis_report.json", encoding="utf-8") as handle:
               report = json.load(handle)
-          print(report["verdict"])
+          print(json.dumps(report["verdict"]))
