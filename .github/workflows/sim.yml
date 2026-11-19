@@ -4,9 +4,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,12 +21,20 @@ jobs:
           python-version: "3.12"
       - name: Install
         run: pip install -r requirements.txt
+      - name: Regression tests (simulation only)
+        run: python tests/test_smoke.py
       - name: DAQ simulate
         run: python3 tt_brown_lab_run.py --backend sim --dwell 0.1 --out tt_brown_runs
       - name: Analyze
+        shell: python
         run: |
-          CSV=$(ls -1 tt_brown_runs/run_*.csv | tail -1)
-          python3 tt_brown_analyze.py --csv "$CSV" --out tt_brown_analysis --floor-N 1e-8
+          import glob, subprocess, sys
+          csv = sorted(glob.glob("tt_brown_runs/run_*.csv"))[-1]
+          subprocess.run([sys.executable, "tt_brown_analyze.py", "--csv", csv, "--out", "tt_brown_analysis", "--floor-N", "1e-8"], check=True)
       - name: Show verdict
+        shell: python
         run: |
-          python3 -c "import json; r=json.load(open('tt_brown_analysis/analysis_report.json')); print(r['verdict'])"
+          import json
+          with open("tt_brown_analysis/analysis_report.json", encoding="utf-8") as handle:
+              report = json.load(handle)
+          print(report["verdict"])

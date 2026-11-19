@@ -49,6 +49,19 @@ def test_sim_run_short():
     assert r.returncode == 0, r.stderr
     csvs = list(Path(out).glob("run_*.csv"))
     assert csvs, "expected at least one run_*.csv from sim"
+    import json
+    import os
+    analysis = Path(out) / "analysis"
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "tt_brown_analyze.py"), "--csv", str(csvs[-1]), "--out", str(analysis)],
+        env={**os.environ, "PYTHONUTF8": "0", "PYTHONIOENCODING": "ascii"},
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    report = json.loads((analysis / "analysis_report.json").read_text(encoding="utf-8"))
+    assert report["n_raw"] > 0
+    assert report["verdict"]["status"] in {"OPEN_NULL", "RESIDUE"}
+    assert "F_odd ≈ k V²" in (analysis / "analysis_report.md").read_text(encoding="utf-8")
 
 
 def test_analyze_module_imports():

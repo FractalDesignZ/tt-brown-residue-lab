@@ -134,7 +134,7 @@ def main():
         "verdict": verd,
         "gates": {"i_max_nA": args.i_max_nA, "p_max_torr": args.p_max_torr, "floor_N": args.floor_N},
     }
-    (out / "analysis_report.json").write_text(json.dumps(report, indent=2))
+    (out / "analysis_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     md = [
         "# TT Brown residue — analysis report",
@@ -156,7 +156,11 @@ def main():
             f"- {r['run_id']} V={r['V_abs_kV']:.0f} kV: "
             f"F_odd={r['F_odd']:.3e}±{r['F_odd_se']:.3e} N  F_even={r['F_even']:.3e}"
         )
-    (out / "analysis_report.md").write_text("\n".join(md))
+    (out / "analysis_report.md").write_text("\n".join(md), encoding="utf-8")
+    # Reports retain UTF-8 mathematics even on legacy Windows consoles/pipes.
+    import sys
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="backslashreplace")
     print("\n".join(md))
     print(f"\nwrote {out}/analysis_report.json")
 
